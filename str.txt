@@ -1,0 +1,18 @@
+ai-companion-chatbot/
+│
+├── frontend/
+│   ├── index.html
+│   ├── style.css
+│   ├── script.js
+│   └── assets/
+│       └── avatar.png
+│
+├── backend/
+│   ├── app.py
+│   ├── requirements.txt
+│   ├── config.py
+│   └── companion_ai.py
+│
+├── .env
+├── .gitignore
+└── README.md
