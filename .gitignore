@@ -1,6 +1,8 @@
 # Environment variables
 backend/.env
 .env
+*.env
+.env.*
 
 # Python
 __pycache__/
@@ -8,6 +10,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
+backend/venv/
 venv/
 env/
 ENV/
@@ -15,10 +18,36 @@ ENV/
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Test files (keep locally, don't upload)
+backend/test_*.py
+backend/test_api.py
+backend/test_env.py
+backend/test_simple_api.py
+backend/test_auth.py
+backend/test_gemini.py
+
+# Old versions (keep for reference)
+backend/companion_ai.py

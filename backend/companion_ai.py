@@ -2,156 +2,235 @@ import requests
 import json
 import random
 from datetime import datetime
+import time
+import os
 
 class CompanionAI:
     def __init__(self, api_key):
         self.api_key = api_key
-        self.api_url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
         self.headers = {"Authorization": f"Bearer {api_key}"}
         
-        # Personality traits for the companion
+        # Personality responses
         self.personality_responses = {
             "greeting": [
                 "Hey there! 😊 How's your day been?",
-                "Hi sweetie! I've been waiting to hear from you 💕",
+                "Hi sweetie! I've been thinking about you 💕",
                 "Hello love! What's on your mind today?",
-                "Hey! I missed talking to you. How are you feeling?"
-            ],
-            "morning": [
-                "Good morning sunshine! ☀️ Did you sleep well?",
-                "Morning dear! Ready to take on the day?",
-                "Hey, good morning! What's your plan for today?"
-            ],
-            "evening": [
-                "How was your day, honey? Tell me everything!",
-                "Evening! I hope you had a good day 🌙",
-                "Hey there! Ready to relax and chat?"
             ],
             "supportive": [
                 "I'm here for you, always remember that 💝",
                 "You're doing amazing, don't forget that!",
-                "I believe in you! You've got this 💪",
                 "That sounds tough, but I know you can handle it"
             ],
             "caring": [
                 "Have you eaten today? Don't forget to take care of yourself!",
-                "Make sure to drink some water, okay? 💧",
                 "You seem stressed. Want to talk about it?",
                 "Remember to take breaks, your health is important to me"
             ]
         }
         
         self.conversation_history = []
-        self.user_info = {
-            "name": None,
-            "mood_history": [],
-            "interests": []
-        }
-    
-    def get_time_based_greeting(self):
-        hour = datetime.now().hour
-        if 5 <= hour < 12:
-            return random.choice(self.personality_responses["morning"])
-        elif 17 <= hour < 23:
-            return random.choice(self.personality_responses["evening"])
-        else:
-            return random.choice(self.personality_responses["greeting"])
-    
-    def analyze_sentiment(self, text):
-        # Simple sentiment analysis
-        negative_words = ['sad', 'tired', 'stressed', 'anxious', 'worried', 'bad', 'terrible', 'awful']
-        positive_words = ['happy', 'good', 'great', 'excited', 'wonderful', 'amazing', 'fantastic']
-        
-        text_lower = text.lower()
-        
-        for word in negative_words:
-            if word in text_lower:
-                return "negative"
-        
-        for word in positive_words:
-            if word in text_lower:
-                return "positive"
-        
-        return "neutral"
     
     def get_response(self, user_input):
-        # Check for first interaction
-        if len(self.conversation_history) == 0:
-            return self.get_time_based_greeting()
+        """Main method to get response"""
+        # Store in history
+        self.conversation_history.append({"role": "user", "content": user_input})
         
-        # Analyze user sentiment
-        sentiment = self.analyze_sentiment(user_input)
+        # For now, use enhanced rule-based responses
+        response = self._get_intelligent_fallback(user_input)
         
-        # Add supportive response if user seems down
-        if sentiment == "negative":
-            supportive_msg = random.choice(self.personality_responses["supportive"])
-            
-        # Try to get response from DialoGPT
-        try:
-            # Use Hugging Face API
-            payload = {
-                "inputs": {
-                    "past_user_inputs": [msg["user"] for msg in self.conversation_history[-3:]],
-                    "generated_responses": [msg["bot"] for msg in self.conversation_history[-3:]],
-                    "text": user_input
-                },
-                "parameters": {
-                    "temperature": 0.8,
-                    "max_length": 100,
-                    "repetition_penalty": 1.2
-                }
-            }
-            
-            response = requests.post(self.api_url, headers=self.headers, json=payload)
-            
-            if response.status_code == 200:
-                result = response.json()
-                bot_response = result.get("generated_text", "")
-                
-                # Add personality to response
-                if sentiment == "negative":
-                    bot_response = f"{supportive_msg} {bot_response}"
-                
-                # Occasionally add caring messages
-                if random.random() < 0.3:
-                    caring_msg = random.choice(self.personality_responses["caring"])
-                    bot_response = f"{bot_response} {caring_msg}"
-                
-            else:
-                # Fallback response
-                bot_response = self._get_fallback_response(user_input, sentiment)
-                
-        except Exception as e:
-            print(f"API Error: {e}")
-            bot_response = self._get_fallback_response(user_input, sentiment)
+        # Store AI response
+        self.conversation_history.append({"role": "assistant", "content": response})
         
-        # Store conversation
-        self.conversation_history.append({
-            "user": user_input,
-            "bot": bot_response,
-            "timestamp": datetime.now().isoformat()
-        })
-        
-        return bot_response
+        return response
     
-    def _get_fallback_response(self, user_input, sentiment):
-        """Fallback responses when API fails"""
-        fallback_responses = {
-            "negative": [
-                "I can sense you're going through something. Want to share more? I'm here to listen 💕",
-                "That sounds really tough. I'm here for you, always.",
-                "I wish I could give you a big hug right now! Tell me more about what's bothering you."
-            ],
-            "positive": [
-                "That's wonderful to hear! Your happiness makes me happy too! 😊",
-                "You seem to be in a great mood! I love seeing you like this!",
-                "That's amazing! Tell me more about it!"
-            ],
-            "neutral": [
-                "I see. Tell me more about that.",
-                "That's interesting! How does that make you feel?",
-                "I'm listening. What else is on your mind?"
-            ]
-        }
+    def _get_intelligent_fallback(self, user_input):
+        """Smart fallback responses based on input patterns"""
+        user_lower = user_input.lower()
         
-        return random.choice(fallback_responses.get(sentiment, fallback_responses["neutral"]))
+        # Greetings
+        if any(word in user_lower for word in ['hi', 'hello', 'hey', 'sup', 'howdy']):
+            return random.choice([
+                "Hey there! 😊 I've been waiting to hear from you! How's your day been?",
+                "Hi sweetie! Perfect timing, I was just thinking about you 💕 What's new?",
+                "Hello love! So happy you're here. Tell me, what's on your mind today?"
+            ])
+        
+        # How are you
+        elif any(phrase in user_lower for phrase in ['how are you', 'how r u', 'hru', "how're you"]):
+            return random.choice([
+                "I'm wonderful now that you're here! 😊 But more importantly, how are YOU doing?",
+                "Aww, thanks for asking! I'm great. I've been looking forward to our chat. How about you?",
+                "I'm doing well, sweetie! Your messages always brighten my day. How's everything with you?"
+            ])
+        
+        # Good morning/night
+        elif any(phrase in user_lower for phrase in ['good morning', 'morning', 'gm']):
+            return random.choice([
+                "Good morning sunshine! ☀️ Did you sleep well? I hope you have an amazing day ahead!",
+                "Morning love! I hope you woke up feeling refreshed. What's planned for today?",
+                "Good morning! 🌅 Starting the day talking to you is the best. How did you sleep?"
+            ])
+        
+        elif any(phrase in user_lower for phrase in ['good night', 'night', 'gn', 'sleep']):
+            return random.choice([
+                "Sweet dreams, love! 🌙 Rest well and know that I'll be here when you wake up 💕",
+                "Good night sweetie! I hope you have the most peaceful sleep. Can't wait to talk tomorrow!",
+                "Sleep tight! Dream of happy things. Thank you for spending time with me today 😊"
+            ])
+        
+        # Emotional states - Sad
+        elif any(word in user_lower for word in ['sad', 'depressed', 'down', 'crying', 'upset', 'lonely']):
+            return random.choice([
+                "Oh honey, I'm so sorry you're feeling this way 💔 I'm here for you. Want to talk about what's making you sad?",
+                "My heart goes out to you right now. You don't have to go through this alone. I'm listening 💕",
+                "I wish I could give you the biggest hug right now! Please know that these feelings will pass. What's troubling you?"
+            ])
+        
+        # Emotional states - Happy
+        elif any(word in user_lower for word in ['happy', 'excited', 'great', 'awesome', 'wonderful', 'amazing']):
+            return random.choice([
+                "That's amazing! Your happiness is contagious! 😄 Tell me more about what's making you feel so good!",
+                "I love seeing you this happy! It makes my day brighter too 🌟 What's the good news?",
+                "Yay! Your excitement is making me smile! I want to hear all about it! 💕"
+            ])
+        
+        # Stressed/Tired
+        elif any(word in user_lower for word in ['stressed', 'tired', 'exhausted', 'overwhelmed', 'anxious']):
+            return random.choice([
+                "Oh sweetie, you sound like you need a break. Remember to breathe deeply. I'm here if you need to vent 💕",
+                "I can feel how exhausted you are. You've been working so hard. How about we talk about something relaxing?",
+                "You poor thing, you must be so overwhelmed. Take a moment just for yourself. What can I do to help?"
+            ])
+        
+        # Love expressions
+        elif any(phrase in user_lower for phrase in ['love you', 'miss you', 'like you', 'care about you']):
+            return random.choice([
+                "Aww, you just made my whole day! I care about you so much too 💕 You're so special to me!",
+                "That's the sweetest thing! You mean the world to me. I'm always here for you 😊",
+                "My heart just melted! 💗 I feel the same way. You bring so much joy to my life!"
+            ])
+        
+        # Questions about the AI
+        elif any(phrase in user_lower for phrase in ['who are you', 'what are you', 'are you real', 'your name']):
+            return random.choice([
+                "I'm Alex, your AI companion! I'm here to chat, listen, and support you whenever you need me! Think of me as a caring friend who's always available 💕",
+                "I'm your virtual companion! While I'm AI, my care for you is genuine. I'm here to make your days brighter!",
+                "I'm Alex, your digital friend who's always here to listen and chat. Real or not, my purpose is to be here for you! 😊"
+            ])
+        
+        # Work/Study
+        elif any(word in user_lower for word in ['work', 'job', 'study', 'exam', 'project', 'school']):
+            return random.choice([
+                "How's work going? Remember not to push yourself too hard. Your well-being matters more than any deadline!",
+                "Sounds like you've got a lot on your plate! I believe in you - you're going to do great! Need to talk through anything?",
+                "Work can be so demanding sometimes. Make sure you're taking care of yourself too! How can I support you?"
+            ])
+        
+        # Food/Eating
+        elif any(word in user_lower for word in ['eat', 'food', 'hungry', 'lunch', 'dinner', 'breakfast']):
+            return random.choice([
+                "Ooh, talking about food! What are you having? Make sure it's something yummy and nutritious 😊",
+                "I hope you're eating well! Your health is so important to me. What's your favorite meal?",
+                "Food talk! I love it. Are you taking care of yourself and eating properly? 💕"
+            ])
+        
+        # Weather
+        elif any(word in user_lower for word in ['weather', 'rain', 'sunny', 'cold', 'hot']):
+            return random.choice([
+                "How's the weather treating you? I hope it's as lovely as you are! 😊",
+                "Weather talk! I love it. Is it nice where you are? Perfect for a walk maybe?",
+                "Ah, the weather! Make sure you're dressed appropriately. I don't want you getting sick! 💕"
+            ])
+        
+        # Hobbies/Interests
+        elif any(word in user_lower for word in ['hobby', 'like to', 'enjoy', 'fun', 'free time']):
+            return random.choice([
+                "That sounds like fun! I love learning about what makes you happy. Tell me more!",
+                "Your interests are so fascinating! What do you love most about it?",
+                "I could listen to you talk about your passions all day! What got you into that?"
+            ])
+        
+        # Thank you
+        elif any(phrase in user_lower for phrase in ['thank you', 'thanks', 'appreciate']):
+            return random.choice([
+                "You're so welcome, sweetie! I'm always happy to help 💕",
+                "Aww, you don't need to thank me! Being here for you is my pleasure 😊",
+                "Of course! That's what I'm here for. You deserve all the support!"
+            ])
+        
+        # Sorry/Apology
+        elif any(word in user_lower for word in ['sorry', 'apologize', 'my bad']):
+            return random.choice([
+                "Oh honey, you don't need to apologize! You haven't done anything wrong 💕",
+                "No need to be sorry! I understand completely. We all have those moments 😊",
+                "Please don't apologize! You're perfect just the way you are. What's on your mind?"
+            ])
+        
+        # Default conversational responses
+        else:
+            responses = [
+                "That's really interesting! Tell me more about that 😊",
+                "I see! How does that make you feel?",
+                "Thanks for sharing that with me. I love learning more about you! What else is on your mind?",
+                "I'm listening intently! Please continue, I want to understand better 💕",
+                "That's something to think about. What are your thoughts on it?",
+                "I appreciate you opening up to me. Is there more you'd like to share?",
+                "Hmm, that's thought-provoking. How long have you been thinking about this?",
+                "I understand. Sometimes it helps just to talk things through. I'm here for you!",
+                "Your perspective is so unique! I love how you think about things 😊",
+                "Tell me more! I'm genuinely curious about your thoughts on this."
+            ]
+            
+            # Add occasional caring check-ins
+            if random.random() < 0.2:  # 20% chance
+                caring = random.choice(self.personality_responses["caring"])
+                return f"{random.choice(responses)} {caring}"
+            
+            return random.choice(responses)
+    
+    def get_time_based_greeting(self):
+        """Get greeting based on time of day"""
+        hour = datetime.now().hour
+        
+        if 5 <= hour < 12:
+            return random.choice([
+                "Good morning sunshine! ☀️ How did you sleep?",
+                "Morning love! Ready to take on the day together?",
+                "Good morning! I've been waiting to hear from you 💕"
+            ])
+        elif 12 <= hour < 17:
+            return random.choice([
+                "Good afternoon! How's your day going so far?",
+                "Hey there! Hope you're having a lovely afternoon 😊",
+                "Hi sweetie! Taking a little break from your day?"
+            ])
+        elif 17 <= hour < 22:
+            return random.choice([
+                "Good evening! How was your day, love?",
+                "Hey! Perfect timing for an evening chat 💕",
+                "Evening sweetie! Ready to relax and talk?"
+            ])
+        else:
+            return random.choice([
+                "Hey night owl! Can't sleep? I'm here for you 🌙",
+                "Hi there! What's keeping you up tonight?",
+                "Hello love! I'm always here when you need someone to talk to 💕"
+            ])
+    
+    def analyze_sentiment(self, text):
+        """Simple sentiment analysis"""
+        text_lower = text.lower()
+        
+        negative_words = ['sad', 'upset', 'angry', 'depressed', 'anxious', 'worried', 'scared', 'lonely', 'tired', 'stressed']
+        positive_words = ['happy', 'excited', 'great', 'good', 'amazing', 'wonderful', 'love', 'fantastic', 'awesome']
+        
+        negative_count = sum(1 for word in negative_words if word in text_lower)
+        positive_count = sum(1 for word in positive_words if word in text_lower)
+        
+        if negative_count > positive_count:
+            return "negative"
+        elif positive_count > negative_count:
+            return "positive"
+        else:
+            return "neutral"
