@@ -48,6 +48,7 @@ backend/test_env.py
 backend/test_simple_api.py
 backend/test_auth.py
 backend/test_gemini.py
+backend/companion_ai.py
 
 # Old versions (keep for reference)
 backend/companion_ai.py
