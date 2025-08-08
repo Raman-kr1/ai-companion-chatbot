@@ -9,8 +9,17 @@
 </head>
 <body>
     <div class="app-container">
-        <div class="chat-container">
+        <div class="side-menu" id="sideMenu">
+            <h3>Menu</h3>
+            <ul>
+                <li>Profile</li>
+                <li>Settings</li>
+                <li>Clear Chat</li>
+            </ul>
+        </div>
+        <div class="chat-container" id="chatContainer">
             <div class="chat-header">
+                <button class="menu-btn" onclick="toggleMenu()">☰</button>
                 <div class="companion-info">
                     <img src="assets/avatar.png" alt="AI Companion" class="avatar">
                     <div>
@@ -21,7 +30,6 @@
                         </span>
                     </div>
                 </div>
-                <button class="menu-btn" onclick="toggleMenu()">⋮</button>
             </div>
             
             <div class="chat-messages" id="chatMessages">
