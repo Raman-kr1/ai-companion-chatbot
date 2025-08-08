@@ -5,58 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Companion - Your Virtual Partner</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="app-container">
-        <div class="side-menu" id="sideMenu">
-            <h3>Menu</h3>
-            <ul>
-                <li>Profile</li>
-                <li>Settings</li>
-                <li>Clear Chat</li>
-            </ul>
+    <div id="authContainer" class="auth-container">
+        <div id="loginView">
+            <h2>Welcome Back</h2>
+            <input type="email" id="loginEmail" placeholder="Email" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <button onclick="login()">Login</button>
+            <p>Don't have an account? <a href="#" onclick="toggleAuthView()">Register</a></p>
         </div>
+        <div id="registerView" style="display:none;">
+            <h2>Create Account</h2>
+            <input type="email" id="registerEmail" placeholder="Email" required>
+            <input type="password" id="registerPassword" placeholder="Password" required>
+            <button onclick="register()">Register</button>
+            <p>Already have an account? <a href="#" onclick="toggleAuthView()">Login</a></p>
+        </div>
+    </div>
+
+    <div id="appContainer" class="app-container" style="display:none;">
         <div class="chat-container" id="chatContainer">
             <div class="chat-header">
                 <button class="menu-btn" onclick="toggleMenu()">☰</button>
                 <div class="companion-info">
                     <img src="assets/avatar.png" alt="AI Companion" class="avatar">
                     <div>
-                        <h2 class="companion-name">Alex</h2>
+                        <h2 class="companion-name" id="companionName">Alex</h2>
                         <span class="status-indicator">
                             <span class="status-dot"></span>
-                            Always here for you
+                            Online
                         </span>
                     </div>
                 </div>
             </div>
             
-            <div class="chat-messages" id="chatMessages">
-                <!-- Messages will be dynamically added here -->
-            </div>
+            <div class="chat-messages" id="chatMessages"></div>
             
             <div class="typing-indicator" id="typingIndicator" style="display: none;">
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
+                <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
             </div>
             
             <div class="chat-input-container">
-                <input 
-                    type="text" 
-                    id="messageInput" 
-                    placeholder="Type your message..." 
-                    class="chat-input"
-                    autocomplete="off"
-                >
+                <input type="text" id="messageInput" placeholder="Type a message..." class="chat-input" autocomplete="off">
                 <button onclick="sendMessage()" class="send-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 19-7z"/>
                     </svg>
                 </button>
             </div>
+        </div>
+    </div>
+    
+    <div class="side-menu" id="sideMenu">
+        <div>
+            <h3>Settings</h3>
+            <p id="emailDisplay">your.email@example.com</p>
+            <ul>
+                <li><a href="#" onclick="openPersonaSettings()">Customize Persona</a></li>
+            </ul>
+        </div>
+        <button onclick="logout()" class="logout-btn">Logout</button>
+    </div>
+
+    <div id="personaModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closePersonaSettings()">&times;</span>
+            <h2>Customize Your Companion</h2>
+            <label for="personaName">Name:</label>
+            <input type="text" id="personaName">
+            <label for="personaRelationship">Relationship:</label>
+            <input type="text" id="personaRelationship" placeholder="e.g., my best friend, my romantic partner">
+            <label for="personaPersonality">Personality:</label>
+            <textarea id="personaPersonality" rows="4" placeholder="e.g., funny, wise, and a bit sarcastic"></textarea>
+            <button onclick="savePersonaSettings()">Save Settings</button>
         </div>
     </div>
     
